@@ -15,12 +15,9 @@ const getDeepAll = async (req: Request, res: Response) => {
 
 const updateMany = async (req: Request, res: Response) => {
 	try {
-		const metadata = req.body;
+		await businessPatch(req, res);
 
-		businessPatch(metadata)
-
-		res.status(200);
-		res.send(metadata);
+		res.sendStatus(200);
 	} catch (error) {
 		res.status(500).json({ error: 'Internal server error' });
 	}
