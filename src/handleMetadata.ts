@@ -14,11 +14,21 @@ import { businessService } from './services/business';
 import { employeeService } from './services/employee';
 import { Request, Response } from 'express';
 
-async function licensesPatch(licenses: ILicenseData[], employeeId: string, t: Transaction) {
+async function licensesPatch(req: Request, res: Response, licenses: ILicenseData[], employeeId: string, t: Transaction) {
 	const licensesFromDB = await licenseService.getAll();
 	const ids = toArrayOfIds(licensesFromDB);
 
 	for (const license of licenses) {
+		if (
+			!license.__create &&
+      !license.__delete &&
+      !license.id
+		) {
+			res.status(400);
+			res.send('You didn\'t specify any action for License.')
+		}
+  
+
 		if (license.__create) {
 			const { name, issuerName } = license;
 
@@ -26,7 +36,9 @@ async function licensesPatch(licenses: ILicenseData[], employeeId: string, t: Tr
 			ids.push(Number(id));
 
 			if (!name || !issuerName) {
-				return
+				res.status(400);
+				res.send('You didn\'t write the name or issuerName of the License');
+				return;
 			}
 
 			await licenseService.add({ id, name, issuerName, employeeId }, t);
@@ -36,6 +48,8 @@ async function licensesPatch(licenses: ILicenseData[], employeeId: string, t: Tr
 			const { id } = license;
 
 			if (!id) {
+				res.status(404);
+				res.send('You can\'t delete the License. ID not found!')
 				return;
 			}
 
@@ -46,6 +60,8 @@ async function licensesPatch(licenses: ILicenseData[], employeeId: string, t: Tr
 			const { id, name } = license;
       
 			if (!name) {
+				res.status(400);
+				res.send('You may not change the name of the License')
 				return;
 			}
 
@@ -61,6 +77,16 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 			const ids = toArrayOfIds(employeesFromDB);
 
 			for (const employee of employees) {
+				if (
+					!employee.__create &&
+          !employee.__delete &&
+          !employee.__unlink &&
+          !employee.id
+				) {
+					res.status(400);
+					res.send('You didn\'t specify any action for Employee.')
+				}
+
 				if (employee.__create) {
 					const { name, title, licenses } = employee;
 
@@ -82,7 +108,7 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 							return;
 						}
 
-						await licensesPatch(licenses, id, t);
+						await licensesPatch(req, res, licenses, id, t);
 					}
 				}
 
@@ -98,7 +124,7 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 					await employeeService.remove(id, t);
 
 					if (licenses && id) {
-						await licensesPatch(licenses, id, t);
+						await licensesPatch(req, res, licenses, id, t);
 					}
 				}
 
@@ -114,7 +140,7 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 					await employeeService.unlink(id, t);
 
 					if (licenses && id) {
-						await licensesPatch(licenses, id, t);
+						await licensesPatch(req, res, licenses, id, t);
 					}
 				}
 
@@ -131,7 +157,7 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 					}
 
 					if (licenses) {
-						await licensesPatch(licenses, id, t);
+						await licensesPatch(req, res, licenses, id, t);
 					}
 				}
 			}
@@ -142,7 +168,11 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 export async function businessPatch(req: Request, res: Response) {
 	const business: IBusinessData = req.body;
 
-	if (!business.__create && !business.__delete && !business.id) {
+	if (
+		!business.__create &&
+    !business.__delete &&
+    !business.id
+	) {
 		res.status(400);
 		res.send('You didn\'t specify any action for Business.')
 	}
