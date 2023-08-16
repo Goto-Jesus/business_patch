@@ -12,6 +12,7 @@ import { ILicenseData } from './types/ILicenseData';
 import { licenseService } from './services/license';
 import { businessService } from './services/business';
 import { employeeService } from './services/employee';
+import { Request, Response } from 'express';
 
 async function licensesPatch(licenses: ILicenseData[], employeeId: string, t: Transaction) {
 	const licensesFromDB = await licenseService.getAll();
@@ -125,7 +126,14 @@ async function employeesPatch(employees: IEmployeeData[], businessId: string) {
 	}
 }
 
-export async function businessPatch(business: IBusinessData) {
+export async function businessPatch(req: Request, res: Response) {
+	const business: IBusinessData = req.body;
+
+	if (!business.__create && !business.__delete && !business.id) {
+		res.status(400);
+		res.send('You didn\'t specify any action for Business.')
+	}
+
 	if (business.__create) {
 		const { name, employees } = business;
 
@@ -134,7 +142,9 @@ export async function businessPatch(business: IBusinessData) {
 		const id = getNextId(ids);
 
 		if (!name) {
-			return
+			res.status(400);
+			res.send('You can\'t create a Business without a name!')
+			return;
 		}
 
 		await businessService.add(id, name);
@@ -148,6 +158,8 @@ export async function businessPatch(business: IBusinessData) {
 		const { id, employees } = business;
 
 		if (!id) {
+			res.status(404);
+			res.send('Business ID not found!')
 			return;
 		}
 
@@ -160,6 +172,11 @@ export async function businessPatch(business: IBusinessData) {
 
 	if (business.id) {
 		const { id, name, employees } = business;
+
+		if (!name && !employees) {
+			res.status(400);
+			res.send('You have not entered the data that you would like to modify for Business');
+		}
 
 		if (name) {
 			await businessService.update(id, name)
