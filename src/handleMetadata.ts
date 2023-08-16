@@ -54,7 +54,7 @@ async function licensesPatch(licenses: ILicenseData[], employeeId: string, t: Tr
 	}
 }
 
-async function employeesPatch(employees: IEmployeeData[], businessId: string) {
+async function employeesPatch(req: Request, res: Response, employees: IEmployeeData[], businessId: string) {
 	if (dbInstance) {
 		dbInstance.transaction(async (t) => {
 			const employeesFromDB = await employeeService.getAll();
@@ -68,6 +68,8 @@ async function employeesPatch(employees: IEmployeeData[], businessId: string) {
 					ids.push(Number(id));
 
 					if (!name || !title) {
+						res.status(400);
+						res.send('You didn\'t write the name or title of the Employee');
 						return;
 					}
 
@@ -75,6 +77,8 @@ async function employeesPatch(employees: IEmployeeData[], businessId: string) {
 
 					if (licenses && title) {
 						if (title !== EmployeeTitle.WarehouseWorker) {
+							res.status(400);
+							res.send('A license can only be specified for a warehouse worker')
 							return;
 						}
 
@@ -86,6 +90,8 @@ async function employeesPatch(employees: IEmployeeData[], businessId: string) {
 					const { id, licenses } = employee;
 
 					if (!id) {
+						res.status(404);
+						res.send('You can\'t delete the Employee. ID not found!')
 						return;
 					}
 
@@ -100,6 +106,8 @@ async function employeesPatch(employees: IEmployeeData[], businessId: string) {
 					const { id, licenses } = employee;
 
 					if (!id) {
+						res.status(404);
+						res.send('You can\'t unlink the Employee. ID not found!')
 						return;
 					}
 
@@ -112,6 +120,11 @@ async function employeesPatch(employees: IEmployeeData[], businessId: string) {
 
 				if (employee.id) {
 					const { id, title, licenses } = employee;
+
+					if (!title && !licenses) {
+						res.status(400);
+						res.send('You have not entered the data that you would like to modify for Employee');
+					}
 
 					if (title) {
 						await employeeService.update(id, title, t);
@@ -150,7 +163,7 @@ export async function businessPatch(req: Request, res: Response) {
 		await businessService.add(id, name);
 
 		if (employees) {
-			await employeesPatch(employees, id);
+			await employeesPatch(req, res, employees, id);
 		}
 	}
 
@@ -159,14 +172,14 @@ export async function businessPatch(req: Request, res: Response) {
 
 		if (!id) {
 			res.status(404);
-			res.send('Business ID not found!')
+			res.send('You can\'t delete the Business. ID not found!')
 			return;
 		}
 
 		await businessService.remove(id);
 
 		if (employees && id) {
-			await employeesPatch(employees, id);
+			await employeesPatch(req, res, employees, id);
 		}
 	}
 
@@ -183,7 +196,7 @@ export async function businessPatch(req: Request, res: Response) {
 		}
 
 		if (employees) {
-			await employeesPatch(employees, id);
+			await employeesPatch(req, res, employees, id);
 		}
 	}
 }
