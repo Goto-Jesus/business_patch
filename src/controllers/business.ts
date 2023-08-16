@@ -15,7 +15,7 @@ const getDeepAll = async (req: Request, res: Response) => {
 
 const updateMany = async (req: Request, res: Response) => {
 	try {
-		businessPatch(req, res);
+		await businessPatch(req, res);
 
 		res.sendStatus(200);
 	} catch (error) {

@@ -26,8 +26,8 @@ async function licensesPatch(req: Request, res: Response, licenses: ILicenseData
 		) {
 			res.status(400);
 			res.send('You didn\'t specify any action for License.')
+			return;
 		}
-  
 
 		if (license.__create) {
 			const { name, issuerName } = license;
@@ -56,7 +56,7 @@ async function licensesPatch(req: Request, res: Response, licenses: ILicenseData
 			await licenseService.remove(id, t);
 		}
 
-		if (license.id) {
+		if (license.id && !license.__delete) {
 			const { id, name } = license;
       
 			if (!name) {
@@ -85,6 +85,7 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 				) {
 					res.status(400);
 					res.send('You didn\'t specify any action for Employee.')
+					return;
 				}
 
 				if (employee.__create) {
@@ -132,8 +133,7 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 					const { id, licenses } = employee;
 
 					if (!id) {
-						res.status(404);
-						res.send('You can\'t unlink the Employee. ID not found!')
+						res.status(404).send({ message: 'You can\'t unlink the Employee. ID not found!' });
 						return;
 					}
 
@@ -144,12 +144,13 @@ async function employeesPatch(req: Request, res: Response, employees: IEmployeeD
 					}
 				}
 
-				if (employee.id) {
+				if (employee.id && !employee.__delete && !employee.__unlink) {
 					const { id, title, licenses } = employee;
 
 					if (!title && !licenses) {
 						res.status(400);
 						res.send('You have not entered the data that you would like to modify for Employee');
+						return;
 					}
 
 					if (title) {
@@ -175,6 +176,7 @@ export async function businessPatch(req: Request, res: Response) {
 	) {
 		res.status(400);
 		res.send('You didn\'t specify any action for Business.')
+		return;
 	}
 
 	if (business.__create) {
@@ -219,6 +221,7 @@ export async function businessPatch(req: Request, res: Response) {
 		if (!name && !employees) {
 			res.status(400);
 			res.send('You have not entered the data that you would like to modify for Business');
+			return;
 		}
 
 		if (name) {
